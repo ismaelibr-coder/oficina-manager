@@ -111,7 +111,6 @@ export class SeedController {
                             name: p.name,
                             description: p.name,
                             code: `PROD-${p.name.substring(0, 3).toUpperCase()}-${Math.floor(Math.random() * 1000)}`,
-                            price: p.price, // Note: Schema might use salePrice, let's double check. Schema uses salePrice.
                             salePrice: p.price,
                             costPrice: p.cost,
                             stock: 100,
