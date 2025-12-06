@@ -1,4 +1,4 @@
-import { authService } from './auth'
+import { apiClient } from '@/lib/api-client'
 
 export interface ServiceOrderAlert {
     id: string
@@ -26,25 +26,8 @@ export interface ServiceOrderAlert {
 }
 
 class ServiceOrderAlertsService {
-    private getHeaders() {
-        const token = authService.getToken()
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-        }
-    }
-
     async getInProgressAlerts(): Promise<ServiceOrderAlert[]> {
-        const response = await fetch('http://localhost:3001/api/service-orders/alerts', {
-            headers: this.getHeaders(),
-        })
-
-        if (!response.ok) {
-            const error = await response.json()
-            throw new Error(error.message || 'Erro ao buscar alertas de OS')
-        }
-
-        return response.json()
+        return apiClient.get<ServiceOrderAlert[]>('/service-orders/alerts')
     }
 }
 
