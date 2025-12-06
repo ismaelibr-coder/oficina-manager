@@ -33,21 +33,23 @@ export default function FinancialDashboardPage() {
     const loadData = async () => {
         try {
             setLoading(true)
-            const [statsData, revenueByPeriod, services, products, comparison, payments] = await Promise.all([
-                financialService.getDashboardStats(),
-                financialService.getRevenueByPeriod(),
-                financialService.getTopServices(5),
-                financialService.getTopProducts(5),
-                financialService.getServicesVsProducts(),
-                financialService.getPendingPayments(),
+
+            // Load data with individual error handling to prevent 404s from breaking the page
+            const [statsData, revenueByPeriod, services, products, comparison, payments] = await Promise.allSettled([
+                financialService.getDashboardStats().catch(() => ({ monthlyRevenue: 0, pendingPayments: 0, pendingPaymentsCount: 0, completedOrders: 0, averageTicket: 0 })),
+                financialService.getRevenueByPeriod().catch(() => []),
+                financialService.getTopServices(5).catch(() => []),
+                financialService.getTopProducts(5).catch(() => []),
+                financialService.getServicesVsProducts().catch(() => []),
+                financialService.getPendingPayments().catch(() => ({ serviceOrders: [] })),
             ])
 
-            setStats(statsData)
-            setRevenueData(revenueByPeriod)
-            setTopServices(services)
-            setTopProducts(products)
-            setServicesVsProducts(comparison)
-            setPendingPayments(payments.serviceOrders)
+            setStats(statsData.status === 'fulfilled' ? statsData.value : { monthlyRevenue: 0, pendingPayments: 0, pendingPaymentsCount: 0, completedOrders: 0, averageTicket: 0 })
+            setRevenueData(revenueByPeriod.status === 'fulfilled' ? revenueByPeriod.value : [])
+            setTopServices(services.status === 'fulfilled' ? services.value : [])
+            setTopProducts(products.status === 'fulfilled' ? products.value : [])
+            setServicesVsProducts(comparison.status === 'fulfilled' ? comparison.value : [])
+            setPendingPayments(payments.status === 'fulfilled' ? payments.value.serviceOrders : [])
         } catch (error) {
             console.error('Erro ao carregar dados financeiros:', error)
         } finally {
