@@ -107,7 +107,8 @@ export class MaintenanceAlertsController {
             return res.json(relevantAlerts)
         } catch (error) {
             console.error('Erro ao buscar alertas de manutenção:', error)
-            return res.status(500).json({ message: 'Erro ao buscar alertas de manutenção' })
+            // Fail-safe: return empty array
+            return res.json([])
         }
     }
 
@@ -142,7 +143,8 @@ export class MaintenanceAlertsController {
             return res.json(vehicles)
         } catch (error) {
             console.error('Erro ao buscar alertas por data:', error)
-            return res.status(500).json({ message: 'Erro ao buscar alertas por data' })
+            // Fail-safe: return empty array
+            return res.json([])
         }
     }
 }

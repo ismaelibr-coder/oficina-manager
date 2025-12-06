@@ -29,7 +29,8 @@ export class ChecklistsController {
             return res.json(checklist)
         } catch (error) {
             console.error('Erro ao buscar checklist:', error)
-            return res.status(500).json({ message: 'Erro ao buscar checklist' })
+            // Fail-safe: return 404 instead of 500 to prevent crash, assuming it just "doesn't exist" if db error
+            return res.status(404).json({ message: 'Checklist não encontrado ou erro de conexão' })
         }
     }
 

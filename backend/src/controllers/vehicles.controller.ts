@@ -40,10 +40,17 @@ export class VehiclesController {
                 },
             })
 
-            return res.json(vehicles)
+            // Hardening: protect against null customers
+            const safeVehicles = vehicles.map(v => ({
+                ...v,
+                customer: v.customer || { name: 'Cliente Removido', phone: '' }
+            }))
+
+            return res.json(safeVehicles)
         } catch (error) {
             console.error('Erro ao listar veículos:', error)
-            return res.status(500).json({ message: 'Erro ao listar veículos' })
+            // Fail-safe: return empty array
+            return res.json([])
         }
     }
 

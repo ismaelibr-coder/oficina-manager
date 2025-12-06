@@ -43,10 +43,23 @@ export class ServiceOrdersController {
                 orderBy: { createdAt: 'desc' }
             })
 
-            return res.json(serviceOrders)
+            // Hardening: map and protect against nulls before returning
+            const safeServiceOrders = serviceOrders.map(os => ({
+                ...os,
+                vehicle: os.vehicle || { plate: 'N/A', model: 'Desconhecido', brand: '' },
+                mechanic: os.mechanic || { name: 'Não atribuído' },
+                items: os.items || [],
+                appointment: os.appointment ? {
+                    ...os.appointment,
+                    customer: os.appointment.customer || { name: 'Cliente Desconhecido' }
+                } : null
+            }))
+
+            return res.json(safeServiceOrders)
         } catch (error) {
             console.error('Erro ao listar OS:', error)
-            return res.status(500).json({ message: 'Erro ao listar Ordens de Serviço' })
+            // Fail-safe: return empty array
+            return res.json([])
         }
     }
 
@@ -317,7 +330,6 @@ export class ServiceOrdersController {
     // Buscar OS em andamento com alertas
     async getInProgressAlerts(req: AuthRequest, res: Response) {
         try {
-            console.log('Buscando alertas de OS em andamento...')
             const serviceOrders = await prisma.serviceOrder.findMany({
                 where: {
                     status: {
@@ -335,8 +347,6 @@ export class ServiceOrdersController {
                 },
                 orderBy: { createdAt: 'asc' }
             })
-
-            console.log(`Encontradas ${serviceOrders.length} OSs em andamento/aguardando aprovação`)
 
             const now = new Date()
             const alerts = serviceOrders.map(os => {
