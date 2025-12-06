@@ -317,6 +317,7 @@ export class ServiceOrdersController {
     // Buscar OS em andamento com alertas
     async getInProgressAlerts(req: AuthRequest, res: Response) {
         try {
+            console.log('Buscando alertas de OS em andamento...')
             const serviceOrders = await prisma.serviceOrder.findMany({
                 where: {
                     status: {
@@ -335,9 +336,12 @@ export class ServiceOrdersController {
                 orderBy: { createdAt: 'asc' }
             })
 
+            console.log(`Encontradas ${serviceOrders.length} OSs em andamento/aguardando aprovação`)
+
             const now = new Date()
             const alerts = serviceOrders.map(os => {
-                const hoursInProgress = Math.floor((now.getTime() - new Date(os.createdAt).getTime()) / (1000 * 60 * 60))
+                const createdAt = new Date(os.createdAt)
+                const hoursInProgress = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60))
                 const daysInProgress = Math.floor(hoursInProgress / 24)
 
                 let alertLevel: 'critical' | 'warning' | 'info' = 'info'
@@ -351,9 +355,9 @@ export class ServiceOrdersController {
                     id: os.id,
                     orderNumber: os.orderNumber,
                     status: os.status,
-                    vehicle: os.vehicle,
-                    customer: os.appointment?.customer,
-                    mechanic: os.mechanic,
+                    vehicle: os.vehicle || { plate: 'N/A', model: 'Desconhecido', brand: '' },
+                    customer: os.appointment?.customer || { name: 'Cliente Desconhecido', phone: '' },
+                    mechanic: os.mechanic || { name: 'Não atribuído' },
                     createdAt: os.createdAt,
                     hoursInProgress,
                     daysInProgress,
@@ -362,9 +366,10 @@ export class ServiceOrdersController {
             })
 
             return res.json(alerts)
-        } catch (error) {
-            console.error('Erro ao buscar alertas de OS:', error)
-            return res.status(500).json({ message: 'Erro ao buscar alertas de OS' })
+        } catch (error: any) {
+            console.error('Erro CRÍTICO ao buscar alertas de OS:', error)
+            // Retornar array vazio em vez de erro 500 para não quebrar o frontend
+            return res.json([])
         }
     }
 }
