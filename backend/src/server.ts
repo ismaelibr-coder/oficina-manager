@@ -11,7 +11,37 @@ const PORT = process.env.PORT || 3001;
 import { router } from './routes';
 
 // Middlewares
-app.use(cors());
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://a6vd.vercel.app',
+    'https://oficina-manager.vercel.app',
+    /https:\/\/.*\.vercel\.app$/ // Permite todos os domínios preview do Vercel
+];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Permite requisições sem origin (mobile apps, Postman, etc)
+        if (!origin) return callback(null, true);
+
+        // Verifica se a origin está na lista de permitidas
+        const isAllowed = allowedOrigins.some(allowed => {
+            if (typeof allowed === 'string') {
+                return allowed === origin;
+            }
+            return allowed.test(origin);
+        });
+
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
