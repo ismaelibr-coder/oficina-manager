@@ -136,4 +136,13 @@ router.get('/reports/customers', authMiddleware, adminMiddleware, reportsControl
 // Rotas de Upload (protegidas)
 router.post('/uploads', authMiddleware, upload.single('file'), uploadsController.upload)
 
+import { SeedController } from './controllers/seed.controller'
+
+const seedController = new SeedController()
+
+// ... existing routes ...
+
+// Rota de Seed (Temporária para Demonstração)
+router.get('/seed', (req, res) => seedController.seed(req, res))
+
 export { router }

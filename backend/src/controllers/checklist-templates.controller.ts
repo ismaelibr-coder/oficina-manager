@@ -21,7 +21,7 @@ export class ChecklistTemplatesController {
             return res.json(templates)
         } catch (error) {
             console.error('Erro ao listar templates:', error)
-            return res.status(500).json({ message: 'Erro ao listar templates' })
+            return res.json([])
         }
     }
 

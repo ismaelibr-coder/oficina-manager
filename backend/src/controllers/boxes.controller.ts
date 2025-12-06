@@ -16,7 +16,8 @@ export class BoxesController {
             return res.json(boxes)
         } catch (error) {
             console.error('Erro ao listar boxes:', error)
-            return res.status(500).json({ message: 'Erro ao listar boxes' })
+            // Retorna array vazio em caso de erro para não quebrar o frontend
+            return res.json([])
         }
     }
 

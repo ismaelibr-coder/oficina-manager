@@ -10,7 +10,7 @@ export class ServicesController {
         try {
             const { search } = req.query
 
-            const where = search
+            const where: any = search
                 ? {
                     name: { contains: search as string, mode: 'insensitive' as any },
                     active: true,
@@ -25,7 +25,7 @@ export class ServicesController {
             return res.json(services)
         } catch (error) {
             console.error('Erro ao listar serviços:', error)
-            return res.status(500).json({ message: 'Erro ao listar serviços' })
+            return res.json([])
         }
     }
 

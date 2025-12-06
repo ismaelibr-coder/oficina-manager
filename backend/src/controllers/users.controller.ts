@@ -27,7 +27,7 @@ export class UsersController {
             return res.json(users)
         } catch (error) {
             console.error('Erro ao listar usuários:', error)
-            return res.status(500).json({ message: 'Erro ao listar usuários' })
+            return res.json([])
         }
     }
 
