@@ -15,7 +15,6 @@ export default function EditVehiclePage() {
         brand: '',
         year: new Date().getFullYear(),
         color: '',
-        currentKm: 0,
     })
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -34,7 +33,6 @@ export default function EditVehiclePage() {
                 brand: vehicle.brand || '',
                 year: vehicle.year || new Date().getFullYear(),
                 color: vehicle.color || '',
-                currentKm: vehicle.currentKm || 0,
             })
         } catch (error: any) {
             setError(error.message)
@@ -97,11 +95,6 @@ export default function EditVehiclePage() {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Cor</label>
                                 <input type="text" value={formData.color} onChange={(e) => setFormData({ ...formData, color: e.target.value })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900" />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Quilometragem Atual</label>
-                                <input type="number" value={formData.currentKm} onChange={(e) => setFormData({ ...formData, currentKm: parseInt(e.target.value) || 0 })} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-gray-900" />
                             </div>
                         </div>
 
