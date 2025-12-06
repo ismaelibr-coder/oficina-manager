@@ -16,8 +16,12 @@ export interface AuthResponse {
 }
 
 class AuthService {
+    private getApiUrl() {
+        return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+    }
+
     async login(credentials: LoginCredentials): Promise<AuthResponse> {
-        const response = await fetch('http://localhost:3001/api/auth/login', {
+        const response = await fetch(`${this.getApiUrl()}/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
