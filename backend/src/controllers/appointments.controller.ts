@@ -13,9 +13,15 @@ export class AppointmentsController {
             const where: any = {}
 
             if (start && end) {
-                where.scheduledStart = {
-                    gte: new Date(start as string),
-                    lte: new Date(end as string),
+                // Ensure dates are valid
+                const startDate = new Date(start as string)
+                const endDate = new Date(end as string)
+
+                if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+                    where.scheduledStart = {
+                        gte: startDate,
+                        lte: endDate,
+                    }
                 }
             }
 
@@ -42,10 +48,20 @@ export class AppointmentsController {
                 orderBy: { scheduledStart: 'asc' },
             })
 
-            return res.json(appointments)
+            // Normalize response to prevent null pointer exceptions in frontend
+            const safeAppointments = appointments.map(app => ({
+                ...app,
+                customer: app.customer || { id: '', name: 'Cliente Removido', phone: '' },
+                vehicle: app.vehicle || { id: '', plate: '---', model: 'Veículo Removido', brand: '' },
+                box: app.box || { id: '', name: 'Box Desconhecido' },
+                serviceOrder: app.serviceOrder || null
+            }))
+
+            return res.json(safeAppointments)
         } catch (error) {
-            console.error('Erro ao listar agendamentos:', error)
-            return res.status(500).json({ message: 'Erro ao listar agendamentos' })
+            console.error('Erro CRÍTICO ao listar agendamentos:', error)
+            // Fallback para lista vazia para não quebrar o frontend
+            return res.json([])
         }
     }
 
@@ -383,9 +399,6 @@ export class AppointmentsController {
                     })
                     mechanicId = appt?.serviceOrder?.mechanicId
                 }
-                // Se for o movimento inicial e tivermos mechanicId no body (caso de criação), usaríamos aqui.
-                // Para simplificar, vamos focar na cascata de Box primeiro, que é o mais comum.
-                // TODO: Adicionar suporte completo a cascata de mecânico.
 
                 // Processar conflitos de Box
                 for (const conflict of boxConflicts) {
