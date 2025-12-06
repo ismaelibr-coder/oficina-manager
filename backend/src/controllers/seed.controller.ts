@@ -29,16 +29,22 @@ export class SeedController {
             // 1. Criar Clientes e Veículos (se não existirem)
             const customers = []
             for (let i = 1; i <= 5; i++) {
-                const customer = await prisma.customer.upsert({
-                    where: { email: `cliente${i}@exemplo.com` },
-                    update: {},
-                    create: {
-                        name: `Cliente Demo ${i}`,
-                        email: `cliente${i}@exemplo.com`,
-                        phone: `1199999000${i}`,
-                        address: `Rua Exemplo, ${i}`
-                    }
+                // 1. Criar Clientes (Buscar pelo email, pois não é unique no schema)
+                let customer = await prisma.customer.findFirst({
+                    where: { email: `cliente${i}@exemplo.com` }
                 })
+
+                if (!customer) {
+                    customer = await prisma.customer.create({
+                        data: {
+                            name: `Cliente Demo ${i}`,
+                            email: `cliente${i}@exemplo.com`,
+                            phone: `1199999000${i}`,
+                            address: `Rua Exemplo, ${i}`,
+                            cpfCnpj: `1234567890${i}` // Adicionando CPF fictício para garantir unicidade se necessário
+                        }
+                    })
+                }
                 customers.push(customer)
 
                 // Veículo
