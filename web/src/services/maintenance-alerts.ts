@@ -1,4 +1,5 @@
 import { authService } from './auth'
+import { config } from '@/config'
 
 export interface MaintenanceAlert {
     vehicleId: string
@@ -30,7 +31,7 @@ class MaintenanceAlertsService {
     }
 
     async getUpcomingMaintenances(daysAhead: number = 30): Promise<MaintenanceAlert[]> {
-        const response = await fetch(`http://localhost:3001/api/maintenance-alerts?daysAhead=${daysAhead}`, {
+        const response = await fetch(`${config.apiUrl}/maintenance-alerts?daysAhead=${daysAhead}`, {
             headers: this.getHeaders(),
         })
 
@@ -43,7 +44,7 @@ class MaintenanceAlertsService {
     }
 
     async getAlertsByDate(date: string): Promise<any[]> {
-        const response = await fetch(`http://localhost:3001/api/maintenance-alerts/by-date?date=${date}`, {
+        const response = await fetch(`${config.apiUrl}/maintenance-alerts/by-date?date=${date}`, {
             headers: this.getHeaders(),
         })
 

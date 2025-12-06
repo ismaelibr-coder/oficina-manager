@@ -1,6 +1,7 @@
 import { authService } from './auth'
 import { Product } from './products'
 import { Service } from './services'
+import { config } from '@/config'
 
 export interface ServiceOrderItem {
     id: string
@@ -71,8 +72,8 @@ class ServiceOrdersService {
 
     async list(status?: string): Promise<ServiceOrder[]> {
         const url = status
-            ? `http://localhost:3001/api/service-orders?status=${status}`
-            : 'http://localhost:3001/api/service-orders'
+            ? `${config.apiUrl}/service-orders?status=${status}`
+            : `${config.apiUrl}/service-orders`
 
         const response = await fetch(url, {
             headers: this.getHeaders(),
@@ -87,7 +88,7 @@ class ServiceOrdersService {
     }
 
     async getById(id: string): Promise<ServiceOrder> {
-        const response = await fetch(`http://localhost:3001/api/service-orders/${id}`, {
+        const response = await fetch(`${config.apiUrl}/service-orders/${id}`, {
             headers: this.getHeaders(),
         })
 
@@ -100,7 +101,7 @@ class ServiceOrdersService {
     }
 
     async create(appointmentId: string): Promise<ServiceOrder> {
-        const response = await fetch('http://localhost:3001/api/service-orders', {
+        const response = await fetch(`${config.apiUrl}/service-orders`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify({ appointmentId }),
@@ -115,7 +116,7 @@ class ServiceOrdersService {
     }
 
     async addItem(id: string, data: AddItemData): Promise<void> {
-        const response = await fetch(`http://localhost:3001/api/service-orders/${id}/items`, {
+        const response = await fetch(`${config.apiUrl}/service-orders/${id}/items`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -128,7 +129,7 @@ class ServiceOrdersService {
     }
 
     async removeItem(id: string, itemId: string): Promise<void> {
-        const response = await fetch(`http://localhost:3001/api/service-orders/${id}/items/${itemId}`, {
+        const response = await fetch(`${config.apiUrl}/service-orders/${id}/items/${itemId}`, {
             method: 'DELETE',
             headers: this.getHeaders(),
         })
@@ -140,7 +141,7 @@ class ServiceOrdersService {
     }
 
     async updateStatus(id: string, status: string): Promise<ServiceOrder> {
-        const response = await fetch(`http://localhost:3001/api/service-orders/${id}/status`, {
+        const response = await fetch(`${config.apiUrl}/service-orders/${id}/status`, {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify({ status }),

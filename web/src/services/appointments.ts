@@ -1,4 +1,5 @@
 import { authService } from './auth'
+import { config } from '@/config'
 
 export interface Appointment {
     id: string
@@ -60,8 +61,8 @@ class AppointmentsService {
         }
 
         const url = params.toString()
-            ? `http://localhost:3001/api/appointments?${params}`
-            : 'http://localhost:3001/api/appointments'
+            ? `${config.apiUrl}/appointments?${params}`
+            : `${config.apiUrl}/appointments`
 
         const response = await fetch(url, {
             headers: this.getHeaders(),
@@ -76,7 +77,7 @@ class AppointmentsService {
     }
 
     async getById(id: string): Promise<Appointment> {
-        const response = await fetch(`http://localhost:3001/api/appointments/${id}`, {
+        const response = await fetch(`${config.apiUrl}/appointments/${id}`, {
             headers: this.getHeaders(),
         })
 
@@ -89,7 +90,7 @@ class AppointmentsService {
     }
 
     async create(data: CreateAppointmentData): Promise<Appointment> {
-        const response = await fetch('http://localhost:3001/api/appointments', {
+        const response = await fetch(`${config.apiUrl}/appointments`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -104,7 +105,7 @@ class AppointmentsService {
     }
 
     async update(id: string, data: Partial<CreateAppointmentData> & { status?: string }): Promise<Appointment> {
-        const response = await fetch(`http://localhost:3001/api/appointments/${id}`, {
+        const response = await fetch(`${config.apiUrl}/appointments/${id}`, {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -119,7 +120,7 @@ class AppointmentsService {
     }
 
     async checkConflicts(data: { id?: string; boxId: string; scheduledStart: string; scheduledEnd: string }): Promise<{ hasConflicts: boolean; boxConflicts: any[]; mechanicConflicts: any[] }> {
-        const response = await fetch('http://localhost:3001/api/appointments/conflicts', {
+        const response = await fetch(`${config.apiUrl}/appointments/conflicts`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -134,7 +135,7 @@ class AppointmentsService {
     }
 
     async simulateCascade(data: { id?: string; boxId: string; scheduledStart: string; scheduledEnd: string }): Promise<any[]> {
-        const response = await fetch('http://localhost:3001/api/appointments/simulate-cascade', {
+        const response = await fetch(`${config.apiUrl}/appointments/simulate-cascade`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -149,7 +150,7 @@ class AppointmentsService {
     }
 
     async batchUpdate(moves: any[]): Promise<void> {
-        const response = await fetch('http://localhost:3001/api/appointments/batch-update', {
+        const response = await fetch(`${config.apiUrl}/appointments/batch-update`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify({ moves }),
@@ -162,7 +163,7 @@ class AppointmentsService {
     }
 
     async delete(id: string): Promise<void> {
-        const response = await fetch(`http://localhost:3001/api/appointments/${id}`, {
+        const response = await fetch(`${config.apiUrl}/appointments/${id}`, {
             method: 'DELETE',
             headers: this.getHeaders(),
         })

@@ -1,4 +1,5 @@
 import { authService } from './auth'
+import { config } from '@/config'
 
 export interface ChecklistTemplateItem {
     id: string
@@ -30,7 +31,7 @@ class ChecklistTemplatesService {
     }
 
     async list(): Promise<ChecklistTemplate[]> {
-        const response = await fetch('http://localhost:3001/api/checklist-templates', {
+        const response = await fetch(`${config.apiUrl}/checklist-templates`, {
             headers: this.getHeaders(),
         })
 
@@ -43,7 +44,7 @@ class ChecklistTemplatesService {
     }
 
     async getById(id: string): Promise<ChecklistTemplate> {
-        const response = await fetch(`http://localhost:3001/api/checklist-templates/${id}`, {
+        const response = await fetch(`${config.apiUrl}/checklist-templates/${id}`, {
             headers: this.getHeaders(),
         })
 
@@ -56,7 +57,7 @@ class ChecklistTemplatesService {
     }
 
     async create(data: CreateChecklistTemplateData): Promise<ChecklistTemplate> {
-        const response = await fetch('http://localhost:3001/api/checklist-templates', {
+        const response = await fetch(`${config.apiUrl}/checklist-templates`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -71,7 +72,7 @@ class ChecklistTemplatesService {
     }
 
     async update(id: string, data: CreateChecklistTemplateData): Promise<ChecklistTemplate> {
-        const response = await fetch(`http://localhost:3001/api/checklist-templates/${id}`, {
+        const response = await fetch(`${config.apiUrl}/checklist-templates/${id}`, {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -86,7 +87,7 @@ class ChecklistTemplatesService {
     }
 
     async delete(id: string): Promise<void> {
-        const response = await fetch(`http://localhost:3001/api/checklist-templates/${id}`, {
+        const response = await fetch(`${config.apiUrl}/checklist-templates/${id}`, {
             method: 'DELETE',
             headers: this.getHeaders(),
         })

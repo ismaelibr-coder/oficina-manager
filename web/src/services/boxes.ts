@@ -1,4 +1,5 @@
 import { authService } from './auth'
+import { config } from '@/config'
 
 export interface Box {
     id: string
@@ -24,7 +25,7 @@ class BoxesService {
     }
 
     async list(): Promise<Box[]> {
-        const response = await fetch('http://localhost:3001/api/boxes', {
+        const response = await fetch(`${config.apiUrl}/boxes`, {
             headers: this.getHeaders(),
         })
 
@@ -37,7 +38,7 @@ class BoxesService {
     }
 
     async getById(id: string): Promise<Box> {
-        const response = await fetch(`http://localhost:3001/api/boxes/${id}`, {
+        const response = await fetch(`${config.apiUrl}/boxes/${id}`, {
             headers: this.getHeaders(),
         })
 
@@ -50,7 +51,7 @@ class BoxesService {
     }
 
     async create(data: CreateBoxData): Promise<Box> {
-        const response = await fetch('http://localhost:3001/api/boxes', {
+        const response = await fetch(`${config.apiUrl}/boxes`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -65,7 +66,7 @@ class BoxesService {
     }
 
     async update(id: string, data: Partial<CreateBoxData>): Promise<Box> {
-        const response = await fetch(`http://localhost:3001/api/boxes/${id}`, {
+        const response = await fetch(`${config.apiUrl}/boxes/${id}`, {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -80,7 +81,7 @@ class BoxesService {
     }
 
     async delete(id: string): Promise<void> {
-        const response = await fetch(`http://localhost:3001/api/boxes/${id}`, {
+        const response = await fetch(`${config.apiUrl}/boxes/${id}`, {
             method: 'DELETE',
             headers: this.getHeaders(),
         })

@@ -1,4 +1,5 @@
 import { authService } from './auth'
+import { config } from '@/config'
 
 export interface Service {
     id: string
@@ -27,8 +28,8 @@ class ServicesService {
 
     async list(search?: string): Promise<Service[]> {
         const url = search
-            ? `http://localhost:3001/api/services?search=${encodeURIComponent(search)}`
-            : 'http://localhost:3001/api/services'
+            ? `${config.apiUrl}/services?search=${encodeURIComponent(search)}`
+            : `${config.apiUrl}/services`
 
         const response = await fetch(url, {
             headers: this.getHeaders(),
@@ -43,7 +44,7 @@ class ServicesService {
     }
 
     async getById(id: string): Promise<Service> {
-        const response = await fetch(`http://localhost:3001/api/services/${id}`, {
+        const response = await fetch(`${config.apiUrl}/services/${id}`, {
             headers: this.getHeaders(),
         })
 
@@ -56,7 +57,7 @@ class ServicesService {
     }
 
     async create(data: CreateServiceData): Promise<Service> {
-        const response = await fetch('http://localhost:3001/api/services', {
+        const response = await fetch(`${config.apiUrl}/services`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -71,7 +72,7 @@ class ServicesService {
     }
 
     async update(id: string, data: Partial<CreateServiceData>): Promise<Service> {
-        const response = await fetch(`http://localhost:3001/api/services/${id}`, {
+        const response = await fetch(`${config.apiUrl}/services/${id}`, {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -86,7 +87,7 @@ class ServicesService {
     }
 
     async delete(id: string): Promise<void> {
-        const response = await fetch(`http://localhost:3001/api/services/${id}`, {
+        const response = await fetch(`${config.apiUrl}/services/${id}`, {
             method: 'DELETE',
             headers: this.getHeaders(),
         })

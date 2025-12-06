@@ -1,4 +1,5 @@
 import { authService } from './auth'
+import { config } from '@/config'
 
 export interface Vehicle {
     id: string
@@ -41,8 +42,8 @@ class VehiclesService {
         if (search) params.append('search', search)
 
         const url = params.toString()
-            ? `http://localhost:3001/api/vehicles?${params}`
-            : 'http://localhost:3001/api/vehicles'
+            ? `${config.apiUrl}/vehicles?${params}`
+            : `${config.apiUrl}/vehicles`
 
         const response = await fetch(url, {
             headers: this.getHeaders(),
@@ -57,7 +58,7 @@ class VehiclesService {
     }
 
     async getById(id: string): Promise<Vehicle> {
-        const response = await fetch(`http://localhost:3001/api/vehicles/${id}`, {
+        const response = await fetch(`${config.apiUrl}/vehicles/${id}`, {
             headers: this.getHeaders(),
         })
 
@@ -70,7 +71,7 @@ class VehiclesService {
     }
 
     async create(data: CreateVehicleData): Promise<Vehicle> {
-        const response = await fetch('http://localhost:3001/api/vehicles', {
+        const response = await fetch(`${config.apiUrl}/vehicles`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -85,7 +86,7 @@ class VehiclesService {
     }
 
     async update(id: string, data: Partial<CreateVehicleData>): Promise<Vehicle> {
-        const response = await fetch(`http://localhost:3001/api/vehicles/${id}`, {
+        const response = await fetch(`${config.apiUrl}/vehicles/${id}`, {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -100,7 +101,7 @@ class VehiclesService {
     }
 
     async delete(id: string): Promise<void> {
-        const response = await fetch(`http://localhost:3001/api/vehicles/${id}`, {
+        const response = await fetch(`${config.apiUrl}/vehicles/${id}`, {
             method: 'DELETE',
             headers: this.getHeaders(),
         })

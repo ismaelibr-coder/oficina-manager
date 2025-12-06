@@ -1,4 +1,5 @@
 import { authService } from './auth'
+import { config } from '@/config'
 
 export interface User {
     id: string
@@ -35,7 +36,7 @@ class UsersService {
     }
 
     async list(): Promise<User[]> {
-        const response = await fetch('http://localhost:3001/api/users', {
+        const response = await fetch(`${config.apiUrl}/users`, {
             headers: this.getHeaders(),
         })
 
@@ -48,7 +49,7 @@ class UsersService {
     }
 
     async getById(id: string): Promise<User> {
-        const response = await fetch(`http://localhost:3001/api/users/${id}`, {
+        const response = await fetch(`${config.apiUrl}/users/${id}`, {
             headers: this.getHeaders(),
         })
 
@@ -61,7 +62,7 @@ class UsersService {
     }
 
     async create(data: CreateUserData): Promise<User> {
-        const response = await fetch('http://localhost:3001/api/users', {
+        const response = await fetch(`${config.apiUrl}/users`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -76,7 +77,7 @@ class UsersService {
     }
 
     async update(id: string, data: UpdateUserData): Promise<User> {
-        const response = await fetch(`http://localhost:3001/api/users/${id}`, {
+        const response = await fetch(`${config.apiUrl}/users/${id}`, {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -91,7 +92,7 @@ class UsersService {
     }
 
     async delete(id: string): Promise<void> {
-        const response = await fetch(`http://localhost:3001/api/users/${id}`, {
+        const response = await fetch(`${config.apiUrl}/users/${id}`, {
             method: 'DELETE',
             headers: this.getHeaders(),
         })

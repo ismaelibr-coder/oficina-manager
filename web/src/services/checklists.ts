@@ -1,4 +1,5 @@
 import { authService } from './auth'
+import { config } from '@/config'
 
 export interface ChecklistItem {
     id: string
@@ -39,7 +40,7 @@ class ChecklistsService {
     }
 
     async getByAppointmentId(appointmentId: string): Promise<Checklist> {
-        const response = await fetch(`http://localhost:3001/api/checklists/appointment/${appointmentId}`, {
+        const response = await fetch(`${config.apiUrl}/checklists/appointment/${appointmentId}`, {
             headers: this.getHeaders(),
         })
 
@@ -56,7 +57,7 @@ class ChecklistsService {
     }
 
     async create(data: CreateChecklistData): Promise<Checklist> {
-        const response = await fetch('http://localhost:3001/api/checklists', {
+        const response = await fetch(`${config.apiUrl}/checklists`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -71,7 +72,7 @@ class ChecklistsService {
     }
 
     async updateItem(itemId: string, data: UpdateChecklistItemData): Promise<ChecklistItem> {
-        const response = await fetch(`http://localhost:3001/api/checklists/items/${itemId}`, {
+        const response = await fetch(`${config.apiUrl}/checklists/items/${itemId}`, {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -89,7 +90,7 @@ class ChecklistsService {
         formData.append('file', file)
 
         const token = authService.getToken()
-        const response = await fetch('http://localhost:3001/api/uploads', {
+        const response = await fetch(`${config.apiUrl}/uploads`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

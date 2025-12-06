@@ -1,4 +1,5 @@
 import { authService } from './auth'
+import { config } from '@/config'
 
 export interface Customer {
     id: string
@@ -36,8 +37,8 @@ class CustomersService {
 
     async list(search?: string): Promise<Customer[]> {
         const url = search
-            ? `http://localhost:3001/api/customers?search=${encodeURIComponent(search)}`
-            : 'http://localhost:3001/api/customers'
+            ? `${config.apiUrl}/customers?search=${encodeURIComponent(search)}`
+            : `${config.apiUrl}/customers`
 
         const response = await fetch(url, {
             headers: this.getHeaders(),
@@ -52,7 +53,7 @@ class CustomersService {
     }
 
     async getById(id: string): Promise<Customer> {
-        const response = await fetch(`http://localhost:3001/api/customers/${id}`, {
+        const response = await fetch(`${config.apiUrl}/customers/${id}`, {
             headers: this.getHeaders(),
         })
 
@@ -65,7 +66,7 @@ class CustomersService {
     }
 
     async create(data: CreateCustomerData): Promise<Customer> {
-        const response = await fetch('http://localhost:3001/api/customers', {
+        const response = await fetch(`${config.apiUrl}/customers`, {
             method: 'POST',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -80,7 +81,7 @@ class CustomersService {
     }
 
     async update(id: string, data: CreateCustomerData): Promise<Customer> {
-        const response = await fetch(`http://localhost:3001/api/customers/${id}`, {
+        const response = await fetch(`${config.apiUrl}/customers/${id}`, {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify(data),
@@ -95,7 +96,7 @@ class CustomersService {
     }
 
     async delete(id: string): Promise<void> {
-        const response = await fetch(`http://localhost:3001/api/customers/${id}`, {
+        const response = await fetch(`${config.apiUrl}/customers/${id}`, {
             method: 'DELETE',
             headers: this.getHeaders(),
         })
