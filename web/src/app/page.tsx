@@ -18,9 +18,17 @@ function LoginPageContent() {
         setError('')
 
         try {
-            await authService.login({ email, password })
+            const response = await authService.login({ email, password })
+            console.log('Login successful:', response)
+            console.log('Token saved:', localStorage.getItem('token'))
+            console.log('User saved:', localStorage.getItem('user'))
+
+            // Pequeno delay para garantir que o localStorage foi atualizado
+            await new Promise(resolve => setTimeout(resolve, 100))
+
             router.push('/dashboard')
         } catch (error: any) {
+            console.error('Login error:', error)
             setError(error.message || 'Erro ao fazer login')
         } finally {
             setIsLoading(false)
