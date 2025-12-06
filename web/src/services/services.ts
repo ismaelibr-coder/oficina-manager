@@ -1,0 +1,101 @@
+import { authService } from './auth'
+
+export interface Service {
+    id: string
+    name: string
+    description?: string
+    estimatedHours: number
+    price: number
+    active: boolean
+}
+
+export interface CreateServiceData {
+    name: string
+    description?: string
+    estimatedHours?: number
+    price: number
+}
+
+class ServicesService {
+    private getHeaders() {
+        const token = authService.getToken()
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+        }
+    }
+
+    async list(search?: string): Promise<Service[]> {
+        const url = search
+            ? `http://localhost:3001/api/services?search=${encodeURIComponent(search)}`
+            : 'http://localhost:3001/api/services'
+
+        const response = await fetch(url, {
+            headers: this.getHeaders(),
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Erro ao listar serviços')
+        }
+
+        return response.json()
+    }
+
+    async getById(id: string): Promise<Service> {
+        const response = await fetch(`http://localhost:3001/api/services/${id}`, {
+            headers: this.getHeaders(),
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Erro ao buscar serviço')
+        }
+
+        return response.json()
+    }
+
+    async create(data: CreateServiceData): Promise<Service> {
+        const response = await fetch('http://localhost:3001/api/services', {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify(data),
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Erro ao criar serviço')
+        }
+
+        return response.json()
+    }
+
+    async update(id: string, data: Partial<CreateServiceData>): Promise<Service> {
+        const response = await fetch(`http://localhost:3001/api/services/${id}`, {
+            method: 'PUT',
+            headers: this.getHeaders(),
+            body: JSON.stringify(data),
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Erro ao atualizar serviço')
+        }
+
+        return response.json()
+    }
+
+    async delete(id: string): Promise<void> {
+        const response = await fetch(`http://localhost:3001/api/services/${id}`, {
+            method: 'DELETE',
+            headers: this.getHeaders(),
+        })
+
+        if (!response.ok) {
+            const error = await response.json()
+            throw new Error(error.message || 'Erro ao excluir serviço')
+        }
+    }
+}
+
+export const servicesService = new ServicesService()

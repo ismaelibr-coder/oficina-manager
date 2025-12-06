@@ -1,0 +1,338 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USUÁRIOS E AUTENTICAÇÃO
+// ============================================
+
+enum UserRole {
+  ADMIN     // Dono/Gerente - acesso total
+  MECHANIC  // Mecânico - acesso limitado
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(MECHANIC)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  serviceOrders ServiceOrder[]
+  checklists    Checklist[]
+
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}
+
+// ============================================
+// CLIENTES E VEÍCULOS
+// ============================================
+
+model Customer {
+  id          String    @id @default(uuid())
+  name        String
+  cpfCnpj     String?   @unique
+  email       String?
+  phone       String
+  birthDate   DateTime?
+  address     String?
+  city        String?
+  state       String?
+  zipCode     String?
+  notes       String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relacionamentos
+  vehicles      Vehicle[]
+  appointments  Appointment[]
+
+  @@map("customers")
+}
+
+model Vehicle {
+  id                    String    @id @default(uuid())
+  customerId            String
+  brand                 String
+  model                 String
+  year                  Int
+  color                 String?
+  plate                 String    @unique
+  currentKm             Int       @default(0)
+  nextMaintenanceKm     Int?      // Próxima revisão por KM
+  nextMaintenanceDate   DateTime? // Próxima revisão por data
+  notes                 String?
+  active                Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relacionamentos
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  appointments  Appointment[]
+  serviceOrders ServiceOrder[]
+
+  @@map("vehicles")
+}
+
+// ============================================
+// BOXES E AGENDAMENTOS
+// ============================================
+
+enum BoxStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+}
+
+model Box {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  status      BoxStatus @default(AVAILABLE)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relacionamentos
+  appointments Appointment[]
+
+  @@map("boxes")
+}
+
+enum AppointmentStatus {
+  SCHEDULED   // Agendado
+  CHECKED_IN  // Veículo chegou
+  IN_PROGRESS // Em andamento
+  COMPLETED   // Concluído
+  CANCELLED   // Cancelado
+  RESCHEDULED // Reagendado
+}
+
+model Appointment {
+  id              String            @id @default(uuid())
+  customerId      String
+  vehicleId       String
+  boxId           String
+  scheduledStart  DateTime
+  scheduledEnd    DateTime
+  checkedInAt     DateTime?
+  checkedOutAt    DateTime?
+  status          AppointmentStatus @default(SCHEDULED)
+  description     String?
+  estimatedHours  Float?
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relacionamentos
+  customer     Customer      @relation(fields: [customerId], references: [id])
+  vehicle      Vehicle       @relation(fields: [vehicleId], references: [id])
+  box          Box           @relation(fields: [boxId], references: [id])
+  checklist    Checklist?
+  serviceOrder ServiceOrder?
+
+  @@map("appointments")
+}
+
+// ============================================
+// PRODUTOS E SERVIÇOS
+// ============================================
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  code        String?  @unique
+  description String?
+  costPrice   Float    @default(0)
+  salePrice   Float
+  stock       Int      @default(0)
+  minStock    Int      @default(0)
+  supplier    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  checklistItems      ChecklistItem[]
+  serviceOrderItems   ServiceOrderItem[]
+
+  @@map("products")
+}
+
+model Service {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  estimatedHours Float    @default(1)
+  price          Float
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relacionamentos
+  serviceOrderItems ServiceOrderItem[]
+
+  @@map("services")
+}
+
+// ============================================
+// CHECKLIST
+// ============================================
+
+model ChecklistTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  items ChecklistTemplateItem[]
+
+  @@map("checklist_templates")
+}
+
+model ChecklistTemplateItem {
+  id         String   @id @default(uuid())
+  templateId String
+  name       String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  // Relacionamentos
+  template ChecklistTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@map("checklist_template_items")
+}
+
+enum ChecklistItemStatus {
+  NOT_CHECKED
+  OK
+  ATTENTION
+  CRITICAL
+}
+
+model Checklist {
+  id            String   @id @default(uuid())
+  appointmentId String   @unique
+  mechanicId    String
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relacionamentos
+  appointment Appointment      @relation(fields: [appointmentId], references: [id])
+  mechanic    User             @relation(fields: [mechanicId], references: [id])
+  items       ChecklistItem[]
+
+  @@map("checklists")
+}
+
+model ChecklistItem {
+  id          String              @id @default(uuid())
+  checklistId String
+  name        String
+  status      ChecklistItemStatus @default(NOT_CHECKED)
+  productId   String?             // Produto associado (opcional)
+  quantity    Int                 @default(1)
+  notes       String?
+  photos      String[]            // Array de URLs das fotos
+  order       Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relacionamentos
+  checklist Checklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  product   Product?  @relation(fields: [productId], references: [id])
+
+  @@map("checklist_items")
+}
+
+// ============================================
+// ORDEM DE SERVIÇO
+// ============================================
+
+enum ServiceOrderStatus {
+  PENDING           // Pendente
+  IN_PROGRESS       // Em andamento
+  AWAITING_APPROVAL // Aguardando aprovação do cliente
+  APPROVED          // Aprovado
+  COMPLETED         // Concluído
+  CANCELLED         // Cancelado
+}
+
+model ServiceOrder {
+  id            String             @id @default(uuid())
+  orderNumber   String             @unique // Número sequencial
+  appointmentId String             @unique
+  vehicleId     String
+  mechanicId    String
+  status        ServiceOrderStatus @default(PENDING)
+  subtotal      Float              @default(0)
+  discount      Float              @default(0)
+  total         Float              @default(0)
+  approvedAt    DateTime?
+  completedAt   DateTime?
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  // Relacionamentos
+  appointment Appointment        @relation(fields: [appointmentId], references: [id])
+  vehicle     Vehicle            @relation(fields: [vehicleId], references: [id])
+  mechanic    User               @relation(fields: [mechanicId], references: [id])
+  items       ServiceOrderItem[]
+
+  @@map("service_orders")
+}
+
+enum ServiceOrderItemType {
+  PRODUCT // Peça/Produto
+  SERVICE // Mão de obra
+}
+
+model ServiceOrderItem {
+  id             String               @id @default(uuid())
+  serviceOrderId String
+  type           ServiceOrderItemType
+  productId      String?
+  serviceId      String?
+  description    String
+  quantity       Int                  @default(1)
+  unitPrice      Float
+  total          Float
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  // Relacionamentos
+  serviceOrder ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  product      Product?     @relation(fields: [productId], references: [id])
+  service      Service?     @relation(fields: [serviceId], references: [id])
+
+  @@map("service_order_items")
+}
