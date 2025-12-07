@@ -31,7 +31,9 @@ export async function fetchPaginated<T>(
         })
     }
 
-    const url = `${config.apiUrl}${endpoint}?${params.toString()}`
+    // Ensure endpoint starts with / and construct full URL
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+    const url = `${config.apiUrl}${cleanEndpoint}?${params.toString()}`
 
     const response = await fetch(url, {
         headers: {
