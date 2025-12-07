@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { vehiclesService, Vehicle } from '@/services/vehicles'
 import { authService } from '@/services/auth'
+import { Pagination } from '@/components/Pagination'
+import { fetchPaginated } from '@/services/pagination-helper'
 
 export default function VehiclesPage() {
     const router = useRouter()
@@ -11,15 +13,32 @@ export default function VehiclesPage() {
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
 
+    // Pagination state
+    const [page, setPage] = useState(1)
+    const [pageSize, setPageSize] = useState(20)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalItems, setTotalItems] = useState(0)
+
     useEffect(() => {
         loadVehicles()
-    }, [])
+    }, [page, pageSize, search])
 
-    const loadVehicles = async (searchTerm?: string) => {
+    const loadVehicles = async () => {
         try {
             setLoading(true)
-            const data = await vehiclesService.list(undefined, searchTerm)
-            setVehicles(data)
+            const params: Record<string, string> = {}
+            if (search) params.search = search
+
+            const result = await fetchPaginated<Vehicle>(
+                '/vehicles',
+                page,
+                pageSize,
+                params
+            )
+
+            setVehicles(result.data)
+            setTotalPages(result.pagination.totalPages)
+            setTotalItems(result.pagination.total)
         } catch (error: any) {
             alert(error.message)
         } finally {
@@ -37,7 +56,7 @@ export default function VehiclesPage() {
         }
     }
 
-    if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Carregando...</div>
+
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -53,7 +72,7 @@ export default function VehiclesPage() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="mb-6 flex gap-4">
-                    <form onSubmit={(e) => { e.preventDefault(); loadVehicles(search) }} className="flex-1 flex gap-2">
+                    <form onSubmit={(e) => { e.preventDefault(); setPage(1) }} className="flex-1 flex gap-2">
                         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por placa, modelo ou marca..." className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-900" />
                         <button type="submit" className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">Buscar</button>
                     </form>
@@ -61,34 +80,59 @@ export default function VehiclesPage() {
                 </div>
 
                 <div className="bg-white rounded-lg shadow overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Placa</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modelo</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Marca</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ano</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {vehicles.map((vehicle) => (
-                                <tr key={vehicle.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium text-gray-900">{vehicle.plate}</div></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{vehicle.model}</div></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{vehicle.brand || '-'}</div></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{vehicle.year || '-'}</div></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{vehicle.customer?.name || '-'}</div></td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onClick={() => router.push(`/dashboard/vehicles/${vehicle.id}/edit`)} className="text-primary-600 hover:text-primary-900 mr-4">Editar</button>
-                                        <button onClick={() => handleDelete(vehicle.id)} className="text-red-600 hover:text-red-900">Excluir</button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    {vehicles.length === 0 && <div className="text-center py-12"><p className="text-gray-500">Nenhum veículo cadastrado</p></div>}
+                    {loading ? (
+                        <div className="text-center py-12">Carregando...</div>
+                    ) : (
+                        <>
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Placa</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Modelo</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Marca</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ano</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {vehicles.map((vehicle) => (
+                                        <tr key={vehicle.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium text-gray-900">{vehicle.plate}</div></td>
+                                            <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{vehicle.model}</div></td>
+                                            <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{vehicle.brand || '-'}</div></td>
+                                            <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{vehicle.year || '-'}</div></td>
+                                            <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{vehicle.customer?.name || '-'}</div></td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button onClick={() => router.push(`/dashboard/vehicles/${vehicle.id}/edit`)} className="text-primary-600 hover:text-primary-900 mr-4">Editar</button>
+                                                <button onClick={() => handleDelete(vehicle.id)} className="text-red-600 hover:text-red-900">Excluir</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {vehicles.length === 0 && !loading && (
+                                <div className="text-center py-12">
+                                    <p className="text-gray-500">Nenhum veículo cadastrado</p>
+                                </div>
+                            )}
+
+                            {/* Pagination */}
+                            {totalItems > 0 && (
+                                <div className="mt-6">
+                                    <Pagination
+                                        currentPage={page}
+                                        totalPages={totalPages}
+                                        pageSize={pageSize}
+                                        totalItems={totalItems}
+                                        onPageChange={(newPage) => setPage(newPage)}
+                                        onPageSizeChange={(newSize) => { setPageSize(newSize); setPage(1) }}
+                                        pageSizeOptions={[10, 20, 50, 100]}
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </main>
         </div>

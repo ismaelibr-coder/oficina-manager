@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { customersService, Customer } from '@/services/customers'
 import { authService } from '@/services/auth'
+import { Pagination } from '@/components/Pagination'
+import { fetchPaginated } from '@/services/pagination-helper'
 
 export default function CustomersPage() {
     const router = useRouter()
@@ -11,15 +13,32 @@ export default function CustomersPage() {
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
 
+    // Pagination state
+    const [page, setPage] = useState(1)
+    const [pageSize, setPageSize] = useState(20)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalItems, setTotalItems] = useState(0)
+
     useEffect(() => {
         loadCustomers()
-    }, [])
+    }, [page, pageSize, search])
 
-    const loadCustomers = async (searchTerm?: string) => {
+    const loadCustomers = async () => {
         try {
             setLoading(true)
-            const data = await customersService.list(searchTerm)
-            setCustomers(data)
+            const params: Record<string, string> = {}
+            if (search) params.search = search
+
+            const result = await fetchPaginated<Customer>(
+                '/customers',
+                page,
+                pageSize,
+                params
+            )
+
+            setCustomers(result.data)
+            setTotalPages(result.pagination.totalPages)
+            setTotalItems(result.pagination.total)
         } catch (error: any) {
             alert(error.message)
         } finally {
@@ -29,7 +48,7 @@ export default function CustomersPage() {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault()
-        loadCustomers(search)
+        setPage(1)
     }
 
     const handleDelete = async (id: string) => {
@@ -43,9 +62,7 @@ export default function CustomersPage() {
         }
     }
 
-    if (loading) {
-        return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Carregando...</div>
-    }
+
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -75,32 +92,57 @@ export default function CustomersPage() {
                 </div>
 
                 <div className="bg-white rounded-lg shadow overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telefone</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">CPF/CNPJ</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                            {customers.map((customer) => (
-                                <tr key={customer.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium text-gray-900">{customer.name}</div></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{customer.phone}</div></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{customer.email || '-'}</div></td>
-                                    <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{customer.cpfCnpj || '-'}</div></td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onClick={() => router.push(`/dashboard/customers/${customer.id}/edit`)} className="text-primary-600 hover:text-primary-900 mr-4">Editar</button>
-                                        <button onClick={() => handleDelete(customer.id)} className="text-red-600 hover:text-red-900">Excluir</button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    {customers.length === 0 && <div className="text-center py-12"><p className="text-gray-500">Nenhum cliente cadastrado</p></div>}
+                    {loading ? (
+                        <div className="text-center py-12">Carregando...</div>
+                    ) : (
+                        <>
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Telefone</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">CPF/CNPJ</th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {customers.map((customer) => (
+                                        <tr key={customer.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium text-gray-900">{customer.name}</div></td>
+                                            <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{customer.phone}</div></td>
+                                            <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{customer.email || '-'}</div></td>
+                                            <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-500">{customer.cpfCnpj || '-'}</div></td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button onClick={() => router.push(`/dashboard/customers/${customer.id}/edit`)} className="text-primary-600 hover:text-primary-900 mr-4">Editar</button>
+                                                <button onClick={() => handleDelete(customer.id)} className="text-red-600 hover:text-red-900">Excluir</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {customers.length === 0 && !loading && (
+                                <div className="text-center py-12">
+                                    <p className="text-gray-500">Nenhum cliente cadastrado</p>
+                                </div>
+                            )}
+
+                            {/* Pagination */}
+                            {totalItems > 0 && (
+                                <div className="mt-6">
+                                    <Pagination
+                                        currentPage={page}
+                                        totalPages={totalPages}
+                                        pageSize={pageSize}
+                                        totalItems={totalItems}
+                                        onPageChange={(newPage) => setPage(newPage)}
+                                        onPageSizeChange={(newSize) => { setPageSize(newSize); setPage(1) }}
+                                        pageSizeOptions={[10, 20, 50, 100]}
+                                    />
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </main>
         </div>

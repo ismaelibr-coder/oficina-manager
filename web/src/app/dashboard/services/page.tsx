@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { servicesService, Service } from '@/services/services'
 import { authService } from '@/services/auth'
+import { Pagination } from '@/components/Pagination'
+import { fetchPaginated } from '@/services/pagination-helper'
 
 export default function ServicesPage() {
     const router = useRouter()
@@ -11,15 +13,32 @@ export default function ServicesPage() {
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
 
+    // Pagination state
+    const [page, setPage] = useState(1)
+    const [pageSize, setPageSize] = useState(20)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalItems, setTotalItems] = useState(0)
+
     useEffect(() => {
         loadServices()
-    }, [])
+    }, [page, pageSize, searchTerm])
 
     const loadServices = async () => {
         try {
             setLoading(true)
-            const data = await servicesService.list(searchTerm)
-            setServices(data)
+            const params: Record<string, string> = {}
+            if (searchTerm) params.search = searchTerm
+
+            const result = await fetchPaginated<Service>(
+                '/services',
+                page,
+                pageSize,
+                params
+            )
+
+            setServices(result.data)
+            setTotalPages(result.pagination.totalPages)
+            setTotalItems(result.pagination.total)
         } catch (error: any) {
             alert(error.message)
         } finally {
@@ -40,7 +59,7 @@ export default function ServicesPage() {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault()
-        loadServices()
+        setPage(1)
     }
 
     return (
@@ -73,50 +92,67 @@ export default function ServicesPage() {
                 {loading ? (
                     <div className="text-center py-12">Carregando...</div>
                 ) : (
-                    <div className="bg-white rounded-lg shadow overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Preço</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tempo Estimado</th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {services.map((service) => (
-                                        <tr key={service.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-medium text-gray-900">{service.name}</div>
-                                                <div className="text-sm text-gray-500">{service.description || '-'}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">R$ {service.price.toFixed(2)}</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{service.estimatedHours}h</div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button
-                                                    onClick={() => router.push(`/dashboard/services/${service.id}/edit`)}
-                                                    className="text-primary-600 hover:text-primary-900 mr-4"
-                                                >
-                                                    Editar
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(service.id)}
-                                                    className="text-red-600 hover:text-red-900"
-                                                >
-                                                    Excluir
-                                                </button>
-                                            </td>
+                    <>
+                        <div className="bg-white rounded-lg shadow overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Preço</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tempo Estimado</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {services.map((service) => (
+                                            <tr key={service.id} className="hover:bg-gray-50">
+                                                <td className="px-6 py-4">
+                                                    <div className="text-sm font-medium text-gray-900">{service.name}</div>
+                                                    <div className="text-sm text-gray-500">{service.description || '-'}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-900">R$ {service.price.toFixed(2)}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="text-sm text-gray-900">{service.estimatedHours}h</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <button
+                                                        onClick={() => router.push(`/dashboard/services/${service.id}/edit`)}
+                                                        className="text-primary-600 hover:text-primary-900 mr-4"
+                                                    >
+                                                        Editar
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDelete(service.id)}
+                                                        className="text-red-600 hover:text-red-900"
+                                                    >
+                                                        Excluir
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
+
+                        {/* Pagination */}
+                        {totalItems > 0 && (
+                            <div className="mt-6">
+                                <Pagination
+                                    currentPage={page}
+                                    totalPages={totalPages}
+                                    pageSize={pageSize}
+                                    totalItems={totalItems}
+                                    onPageChange={(newPage) => setPage(newPage)}
+                                    onPageSizeChange={(newSize) => { setPageSize(newSize); setPage(1) }}
+                                    pageSizeOptions={[10, 20, 50, 100]}
+                                />
+                            </div>
+                        )}
+                    </>
                 )}
             </main>
         </div>
