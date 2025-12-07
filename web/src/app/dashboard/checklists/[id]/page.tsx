@@ -68,15 +68,20 @@ export default function ChecklistExecutionPage() {
         }
     }
 
-    const handlePhotoUpload = async (itemId: string, file: File) => {
+    const handlePhotoUpload = async (itemId: string, file: File, inputElement: HTMLInputElement | null) => {
         try {
             setUpdatingItem(itemId)
+            console.log('[Checklist] Starting photo upload for item:', itemId, 'File:', file.name, file.size, 'bytes')
+
             const url = await checklistsService.uploadPhoto(file)
+            console.log('[Checklist] Photo uploaded successfully:', url)
+
             const item = checklist?.items.find(i => i.id === itemId)
             const currentPhotos = item?.photos || []
             const newPhotos = [...currentPhotos, url]
 
             await checklistsService.updateItem(itemId, { photos: newPhotos })
+            console.log('[Checklist] Item updated with photo')
 
             if (checklist) {
                 const newItems = checklist.items.map(i =>
@@ -84,8 +89,25 @@ export default function ChecklistExecutionPage() {
                 )
                 setChecklist({ ...checklist, items: newItems })
             }
+
+            // Reset input to allow selecting the same file again
+            if (inputElement) {
+                inputElement.value = ''
+            }
         } catch (error: any) {
-            alert('Erro ao enviar foto: ' + error.message)
+            console.error('[Checklist] Error uploading photo:', error)
+            // Use a more mobile-friendly error display
+            const errorMessage = error.message || 'Erro desconhecido ao enviar foto'
+            if (typeof window !== 'undefined') {
+                // Create a toast-like notification
+                const toast = document.createElement('div')
+                toast.className = 'fixed bottom-4 left-4 right-4 bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-slide-up'
+                toast.textContent = `❌ ${errorMessage}`
+                document.body.appendChild(toast)
+                setTimeout(() => {
+                    toast.remove()
+                }, 4000)
+            }
         } finally {
             setUpdatingItem(null)
         }
@@ -122,9 +144,9 @@ export default function ChecklistExecutionPage() {
                         <div className="flex justify-between items-start mb-6">
                             <h3 className="text-lg font-semibold text-gray-900 flex-1">{item.name}</h3>
                             <span className={`px-3 py-1.5 rounded-full text-sm font-bold ml-4 ${item.status === 'OK' ? 'bg-green-100 text-green-800' :
-                                    item.status === 'ATTENTION' ? 'bg-yellow-100 text-yellow-800' :
-                                        item.status === 'CRITICAL' ? 'bg-red-100 text-red-800' :
-                                            'bg-gray-100 text-gray-800'
+                                item.status === 'ATTENTION' ? 'bg-yellow-100 text-yellow-800' :
+                                    item.status === 'CRITICAL' ? 'bg-red-100 text-red-800' :
+                                        'bg-gray-100 text-gray-800'
                                 }`}>
                                 {item.status === 'NOT_CHECKED' ? 'Pendente' :
                                     item.status === 'OK' ? 'OK' :
@@ -138,8 +160,8 @@ export default function ChecklistExecutionPage() {
                                 onClick={() => handleStatusChange(item.id, 'OK')}
                                 disabled={updatingItem === item.id}
                                 className={`touch-target-lg rounded-xl font-semibold text-base transition-all active-scale ${item.status === 'OK'
-                                        ? 'bg-green-600 text-white shadow-md'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-green-50 hover:text-green-700'
+                                    ? 'bg-green-600 text-white shadow-md'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-green-50 hover:text-green-700'
                                     }`}
                             >
                                 ✓ OK
@@ -148,8 +170,8 @@ export default function ChecklistExecutionPage() {
                                 onClick={() => handleStatusChange(item.id, 'ATTENTION')}
                                 disabled={updatingItem === item.id}
                                 className={`touch-target-lg rounded-xl font-semibold text-base transition-all active-scale ${item.status === 'ATTENTION'
-                                        ? 'bg-yellow-500 text-white shadow-md'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-yellow-50 hover:text-yellow-700'
+                                    ? 'bg-yellow-500 text-white shadow-md'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-yellow-50 hover:text-yellow-700'
                                     }`}
                             >
                                 ⚠ Atenção
@@ -158,8 +180,8 @@ export default function ChecklistExecutionPage() {
                                 onClick={() => handleStatusChange(item.id, 'CRITICAL')}
                                 disabled={updatingItem === item.id}
                                 className={`touch-target-lg rounded-xl font-semibold text-base transition-all active-scale ${item.status === 'CRITICAL'
-                                        ? 'bg-red-600 text-white shadow-md'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-700'
+                                    ? 'bg-red-600 text-white shadow-md'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-700'
                                     }`}
                             >
                                 ✕ Crítico
@@ -206,23 +228,35 @@ export default function ChecklistExecutionPage() {
                                     </button>
                                 ))}
 
-                                {/* Botão Adicionar Foto - GRANDE */}
-                                <label className={`w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center border-3 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition-all active-scale ${updatingItem === item.id ? 'opacity-50 cursor-not-allowed' : ''
+                                {/* Botão Adicionar Foto - GRANDE com Loading */}
+                                <label className={`w-24 h-24 sm:w-28 sm:h-28 flex flex-col items-center justify-center border-3 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition-all active-scale ${updatingItem === item.id ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''
                                     }`}>
-                                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    </svg>
-                                    <span className="text-sm font-medium text-gray-600 mt-2">Foto</span>
+                                    {updatingItem === item.id ? (
+                                        <>
+                                            <svg className="animate-spin h-10 w-10 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            <span className="text-sm font-medium text-purple-600 mt-2">Enviando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            <span className="text-sm font-medium text-gray-600 mt-2">Foto</span>
+                                        </>
+                                    )}
                                     <input
                                         type="file"
                                         accept="image/*"
-                                        capture="environment"
+                                        capture="user"
                                         className="hidden"
                                         disabled={updatingItem === item.id}
                                         onChange={(e) => {
                                             const file = e.target.files?.[0]
-                                            if (file) handlePhotoUpload(item.id, file)
+                                            if (file) handlePhotoUpload(item.id, file, e.target)
                                         }}
                                     />
                                 </label>
