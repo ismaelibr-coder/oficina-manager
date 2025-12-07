@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { appointmentsService, Appointment } from '@/services/appointments'
 import { authService } from '@/services/auth'
+import { boxesService, Box } from '@/services/boxes'
 
 export default function AppointmentsPage() {
     const router = useRouter()
@@ -13,9 +14,60 @@ export default function AppointmentsPage() {
     const [loading, setLoading] = useState(true)
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0])
 
+    // Filters
+    const [boxes, setBoxes] = useState<Box[]>([])
+    const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('appointmentStatusFilter')
+            return saved ? JSON.parse(saved) : []
+        }
+        return []
+    })
+    const [selectedBoxIds, setSelectedBoxIds] = useState<string[]>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('appointmentBoxFilter')
+            return saved ? JSON.parse(saved) : []
+        }
+        return []
+    })
+
+    const statusOptions = [
+        { value: 'SCHEDULED', label: 'Agendado' },
+        { value: 'CHECKED_IN', label: 'Na Oficina' },
+        { value: 'IN_PROGRESS', label: 'Em Andamento' },
+        { value: 'COMPLETED', label: 'Concluído' },
+        { value: 'CANCELLED', label: 'Cancelado' }
+    ]
+
+    useEffect(() => {
+        loadBoxes()
+    }, [])
+
     useEffect(() => {
         loadAppointments()
-    }, [filterDate])
+    }, [filterDate, selectedStatuses, selectedBoxIds])
+
+    // Persist filters to localStorage
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('appointmentStatusFilter', JSON.stringify(selectedStatuses))
+        }
+    }, [selectedStatuses])
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('appointmentBoxFilter', JSON.stringify(selectedBoxIds))
+        }
+    }, [selectedBoxIds])
+
+    const loadBoxes = async () => {
+        try {
+            const data = await boxesService.list()
+            setBoxes(data)
+        } catch (error: any) {
+            console.error('Error loading boxes:', error)
+        }
+    }
 
     const loadAppointments = async () => {
         try {
@@ -27,10 +79,19 @@ export default function AppointmentsPage() {
             const end = new Date(filterDate)
             end.setHours(23, 59, 59, 999)
 
-            const data = await appointmentsService.list({
+            let data = await appointmentsService.list({
                 start: start.toISOString(),
                 end: end.toISOString()
             })
+
+            // Apply client-side filters
+            if (selectedStatuses.length > 0) {
+                data = data.filter(apt => selectedStatuses.includes(apt.status))
+            }
+            if (selectedBoxIds.length > 0) {
+                data = data.filter(apt => selectedBoxIds.includes(apt.boxId))
+            }
+
             setAppointments(data)
         } catch (error: any) {
             alert(error.message)
@@ -74,17 +135,91 @@ export default function AppointmentsPage() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <label className="text-gray-700 font-medium">Data:</label>
-                        <input
-                            type="date"
-                            value={filterDate}
-                            onChange={(e) => setFilterDate(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900"
-                        />
+                {/* Comprehensive Filters Section */}
+                <div className="mb-6 bg-white p-4 rounded-lg shadow space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Date Filter */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium text-gray-700 mb-2">Data</label>
+                            <input
+                                type="date"
+                                value={filterDate}
+                                onChange={(e) => setFilterDate(e.target.value)}
+                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            />
+                        </div>
+
+                        {/* Status Multi-Select */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium text-gray-700 mb-2">
+                                Status {selectedStatuses.length > 0 && `(${selectedStatuses.length})`}
+                            </label>
+                            <select
+                                multiple
+                                value={selectedStatuses}
+                                onChange={(e) => {
+                                    const options = Array.from(e.target.selectedOptions, option => option.value)
+                                    setSelectedStatuses(options)
+                                }}
+                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent h-[42px] overflow-hidden"
+                            >
+                                {statusOptions.map(status => (
+                                    <option key={status.value} value={status.value}>
+                                        {selectedStatuses.includes(status.value) ? '✓ ' : ''}{status.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <span className="text-xs text-gray-500 mt-1">Ctrl+Click para múltiplos</span>
+                        </div>
+
+                        {/* Box Multi-Select */}
+                        <div className="flex flex-col">
+                            <label className="text-sm font-medium text-gray-700 mb-2">
+                                Box {selectedBoxIds.length > 0 && `(${selectedBoxIds.length})`}
+                            </label>
+                            <select
+                                multiple
+                                value={selectedBoxIds}
+                                onChange={(e) => {
+                                    const options = Array.from(e.target.selectedOptions, option => option.value)
+                                    setSelectedBoxIds(options)
+                                }}
+                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent h-[42px] overflow-hidden"
+                            >
+                                {boxes.map(box => (
+                                    <option key={box.id} value={box.id}>
+                                        {selectedBoxIds.includes(box.id) ? '✓ ' : ''}{box.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <span className="text-xs text-gray-500 mt-1">Ctrl+Click para múltiplos</span>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex flex-col justify-end">
+                            {(selectedStatuses.length > 0 || selectedBoxIds.length > 0) && (
+                                <button
+                                    onClick={() => {
+                                        setSelectedStatuses([])
+                                        setSelectedBoxIds([])
+                                    }}
+                                    className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors mb-2"
+                                >
+                                    🗑️ Limpar filtros
+                                </button>
+                            )}
+                        </div>
                     </div>
-                    <button onClick={() => router.push('/dashboard/appointments/new')} className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">+ Novo Agendamento</button>
+
+                    {/* New Appointment Button */}
+                    <div className="flex justify-end pt-2 border-t border-gray-200">
+                        <button
+                            onClick={() => router.push('/dashboard/appointments/new')}
+                            className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium shadow-sm transition-all hover:shadow"
+                        >
+                            + Novo Agendamento
+                        </button>
+                    </div>
                 </div>
 
                 {loading ? (
