@@ -163,7 +163,30 @@ function LoginPageContent() {
                                 'Entrar'
                             )}
                         </button>
-                    </form>`r`n                </div>`r`n`r`n                {/* Footer */}
+                    </form>
+
+                    {/* Divider */}
+                    <div className="mt-6 mb-6 flex items-center">
+                        <div className="flex-1 border-t border-gray-200"></div>
+                        <span className="px-4 text-sm text-gray-500">ou</span>
+                        <div className="flex-1 border-t border-gray-200"></div>
+                    </div>
+
+                    {/* Criar conta */}
+                    <div className="text-center">
+                        <p className="text-sm text-gray-600">
+                            Não tem uma conta?{' '}
+                            <a
+                                href="#"
+                                className="text-primary-600 hover:text-primary-700 font-semibold"
+                            >
+                                Criar conta
+                            </a>
+                        </p>
+                    </div>
+                </div>
+
+                {/* Footer */}
                 <div className="mt-8 text-center text-sm text-gray-500">
                     <p>© 2024 Sistema de Gestão de Oficina</p>
                     <p className="mt-1">Versão 1.0.0</p>
