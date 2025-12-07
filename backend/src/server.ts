@@ -15,6 +15,7 @@ const allowedOrigins = [
     'http://localhost:3000',
     'https://a6vd.vercel.app',
     'https://oficina-manager.vercel.app',
+    'https://oficina-manager.onrender.com', // Adicionando origem de produção do backend
     /https:\/\/.*\.vercel\.app$/ // Permite todos os domínios preview do Vercel
 ];
 

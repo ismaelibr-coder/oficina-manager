@@ -140,7 +140,12 @@ import { SeedController } from './controllers/seed.controller'
 
 const seedController = new SeedController()
 
-// ... existing routes ...
+import { DiagnosticsController } from './controllers/diagnostics.controller'
+
+const diagnosticsController = new DiagnosticsController()
+
+// Rota de Diagnóstico (Pública)
+router.get('/diagnostics', (req, res) => diagnosticsController.check(req, res))
 
 // Rota de Seed (Temporária para Demonstração)
 router.get('/seed', (req, res) => seedController.seed(req, res))
