@@ -161,10 +161,10 @@ export class SeedController {
                 })
             }
 
-            // 4. Criar Ordens de Serviço (Passadas)
+            // 4. Criar Ordens de Serviço (Passadas) - OTIMIZADO: Apenas última semana
             const endDate = new Date()
             const startDate = new Date()
-            startDate.setMonth(startDate.getMonth() - 2)
+            startDate.setDate(startDate.getDate() - 7) // Mudou de 2 meses para 7 dias
 
             let currentDate = new Date(startDate)
             let osCount = 0

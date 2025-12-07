@@ -1,14 +1,21 @@
 import { Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { AuthRequest } from '../middleware/auth.middleware'
+import { getPaginationParams, buildPaginationResult } from '../utils/pagination'
 
 const prisma = new PrismaClient()
 
 export class CustomersController {
-    // Listar todos os clientes
+    // Listar todos os clientes com paginação
     async list(req: AuthRequest, res: Response) {
         try {
             const { search } = req.query
+
+            // Get pagination params
+            const { page, pageSize, skip, take } = getPaginationParams(req.query, {
+                defaultPageSize: 50,
+                maxPageSize: 100
+            })
 
             const where: any = search
                 ? {
@@ -21,17 +28,23 @@ export class CustomersController {
                 }
                 : {}
 
+            // Get total count
+            const total = await prisma.customer.count({ where })
+
+            // Get paginated data
             const customers = await prisma.customer.findMany({
                 where,
+                skip,
+                take,
                 orderBy: {
                     createdAt: 'desc',
                 },
             })
 
-            return res.json(customers)
+            return res.json(buildPaginationResult(customers, total, page, pageSize))
         } catch (error) {
             console.error('Erro ao listar clientes:', error)
-            return res.json([])
+            return res.json(buildPaginationResult([], 0, 1, 50))
         }
     }
 

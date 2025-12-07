@@ -1,14 +1,21 @@
 import { Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { AuthRequest } from '../middleware/auth.middleware'
+import { getPaginationParams, buildPaginationResult } from '../utils/pagination'
 
 const prisma = new PrismaClient()
 
 export class VehiclesController {
-    // Listar todos os veículos
+    // Listar todos os veículos com paginação
     async list(req: AuthRequest, res: Response) {
         try {
             const { customerId, search } = req.query
+
+            // Get pagination params
+            const { page, pageSize, skip, take } = getPaginationParams(req.query, {
+                defaultPageSize: 50,
+                maxPageSize: 100
+            })
 
             const where: any = {}
 
@@ -24,8 +31,14 @@ export class VehiclesController {
                 ]
             }
 
+            // Get total count
+            const total = await prisma.vehicle.count({ where })
+
+            // Get paginated data
             const vehicles = await prisma.vehicle.findMany({
                 where,
+                skip,
+                take,
                 include: {
                     customer: {
                         select: {
@@ -46,11 +59,11 @@ export class VehiclesController {
                 customer: v.customer || { name: 'Cliente Removido', phone: '' }
             }))
 
-            return res.json(safeVehicles)
+            return res.json(buildPaginationResult(safeVehicles, total, page, pageSize))
         } catch (error) {
             console.error('Erro ao listar veículos:', error)
-            // Fail-safe: return empty array
-            return res.json([])
+            // Fail-safe: return empty paginated result
+            return res.json(buildPaginationResult([], 0, 1, 50))
         }
     }
 
