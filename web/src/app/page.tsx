@@ -126,12 +126,7 @@ function LoginPageContent() {
                                     Lembrar-me
                                 </span>
                             </label>
-                            <a
-                                href="#"
-                                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                            >
-                                Esqueci a senha
-                            </a>
+                            <button type="button" onClick={() => router.push('/forgot-password')} className="text-sm text-primary-600 hover:text-primary-700 font-medium">Esqueci a senha</button>
                         </div>
 
                         {/* Botão de Login */}

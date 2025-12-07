@@ -39,6 +39,8 @@ const upload = multer(uploadConfig)
 
 // Rotas de Autenticação
 router.post('/auth/login', authController.login)
+router.post('/auth/request-password-reset', authController.requestPasswordReset)
+router.post('/auth/reset-password', authController.resetPassword)
 
 // Rotas de Usuários (protegidas)
 router.get('/users', authMiddleware, adminMiddleware, usersController.list)
