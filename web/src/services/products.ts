@@ -48,7 +48,9 @@ class ProductsService {
             throw new Error(error.message || 'Erro ao listar produtos')
         }
 
-        return response.json()
+        const json = await response.json()
+        // Handle both paginated and non-paginated responses
+        return Array.isArray(json) ? json : (json.data || [])
     }
 
     async getById(id: string): Promise<Product> {
