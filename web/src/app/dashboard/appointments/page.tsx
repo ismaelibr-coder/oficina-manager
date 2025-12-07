@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import { appointmentsService, Appointment } from '@/services/appointments'
 import { authService } from '@/services/auth'
-import { boxesService, Box } from '@/services/boxes'
+import { Pagination } from '@/components/Pagination'
+import { fetchPaginated } from '@/services/pagination-helper'
+import { TableSkeleton } from '@/components/Skeletons'
 
 export default function AppointmentsPage() {
     const router = useRouter()
@@ -14,90 +15,87 @@ export default function AppointmentsPage() {
     const [loading, setLoading] = useState(true)
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0])
 
-    // Filters
-    const [boxes, setBoxes] = useState<Box[]>([])
-    const [selectedStatuses, setSelectedStatuses] = useState<string[]>(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('appointmentStatusFilter')
-            return saved ? JSON.parse(saved) : []
-        }
-        return []
-    })
-    const [selectedBoxIds, setSelectedBoxIds] = useState<string[]>(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('appointmentBoxFilter')
-            return saved ? JSON.parse(saved) : []
-        }
-        return []
-    })
+    // Pagination state
+    const [page, setPage] = useState(1)
+    const [pageSize, setPageSize] = useState(20)
+    const [totalPages, setTotalPages] = useState(1)
+    const [totalItems, setTotalItems] = useState(0)
 
-    const statusOptions = [
-        { value: 'SCHEDULED', label: 'Agendado' },
-        { value: 'CHECKED_IN', label: 'Na Oficina' },
-        { value: 'IN_PROGRESS', label: 'Em Andamento' },
-        { value: 'COMPLETED', label: 'Concluído' },
-        { value: 'CANCELLED', label: 'Cancelado' }
-    ]
-
-    useEffect(() => {
-        loadBoxes()
-    }, [])
+    // Sorting state
+    const [sortField, setSortField] = useState<string>('scheduledStart')
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
 
     useEffect(() => {
         loadAppointments()
-    }, [filterDate, selectedStatuses, selectedBoxIds])
-
-    // Persist filters to localStorage
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('appointmentStatusFilter', JSON.stringify(selectedStatuses))
-        }
-    }, [selectedStatuses])
-
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('appointmentBoxFilter', JSON.stringify(selectedBoxIds))
-        }
-    }, [selectedBoxIds])
-
-    const loadBoxes = async () => {
-        try {
-            const data = await boxesService.list()
-            setBoxes(data)
-        } catch (error: any) {
-            console.error('Error loading boxes:', error)
-        }
-    }
+    }, [filterDate, page, pageSize, sortField, sortOrder])
 
     const loadAppointments = async () => {
         try {
             setLoading(true)
-            // Carregar agendamentos do dia selecionado
+            // Load appointments for selected date with pagination
             const start = new Date(filterDate)
             start.setHours(0, 0, 0, 0)
-
             const end = new Date(filterDate)
             end.setHours(23, 59, 59, 999)
 
+            // For now, load all and filter/sort client-side
+            // TODO: Backend should handle pagination + sorting
             let data = await appointmentsService.list({
                 start: start.toISOString(),
                 end: end.toISOString()
             })
 
-            // Apply client-side filters
-            if (selectedStatuses.length > 0) {
-                data = data.filter(apt => selectedStatuses.includes(apt.status))
-            }
-            if (selectedBoxIds.length > 0) {
-                data = data.filter(apt => selectedBoxIds.includes(apt.boxId))
-            }
+            // Client-side sorting
+            data.sort((a, b) => {
+                let aVal: any = a[sortField as keyof Appointment]
+                let bVal: any = b[sortField as keyof Appointment]
 
-            setAppointments(data)
+                // Handle nested properties (e.g., box.name)
+                if (sortField === 'boxName') {
+                    aVal = a.box?.name || ''
+                    bVal = b.box?.name || ''
+                }
+
+                if (sortField === 'customerName') {
+                    aVal = a.customer?.name || ''
+                    bVal = b.customer?.name || ''
+                }
+
+                if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1
+                if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1
+                return 0
+            })
+
+            // Client-side pagination
+            const total = data.length
+            const startIdx = (page - 1) * pageSize
+            const endIdx = startIdx + pageSize
+            const paginatedData = data.slice(startIdx, endIdx)
+
+            setAppointments(paginatedData)
+            setTotalPages(Math.ceil(total / pageSize))
+            setTotalItems(total)
         } catch (error: any) {
             alert(error.message)
+            setAppointments([])
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleSort = (field: string) => {
+        if (sortField === field) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+        } else {
+            setSortField(field)
+            setSortOrder('asc')
+        }
+        setPage(1) // Reset to first page when sorting
+    }
+
+    const SortIcon = ({ field }: { field: string }) => {
+        if (sortField !== field) return <span className="text-gray-400">⇅</span>
+        return sortOrder === 'asc' ? <span>↑</span> : <span>↓</span>
     }
 
     const getStatusColor = (status: string) => {
@@ -135,148 +133,121 @@ export default function AppointmentsPage() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Comprehensive Filters Section */}
-                <div className="mb-6 bg-white p-4 rounded-lg shadow space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {/* Date Filter */}
-                        <div className="flex flex-col">
-                            <label className="text-sm font-medium text-gray-700 mb-2">Data</label>
-                            <input
-                                type="date"
-                                value={filterDate}
-                                onChange={(e) => setFilterDate(e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            />
-                        </div>
-
-                        {/* Status Multi-Select */}
-                        <div className="flex flex-col">
-                            <label className="text-sm font-medium text-gray-700 mb-2">
-                                Status {selectedStatuses.length > 0 && `(${selectedStatuses.length})`}
-                            </label>
-                            <select
-                                multiple
-                                value={selectedStatuses}
-                                onChange={(e) => {
-                                    const options = Array.from(e.target.selectedOptions, option => option.value)
-                                    setSelectedStatuses(options)
-                                }}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent h-[42px] overflow-hidden"
-                            >
-                                {statusOptions.map(status => (
-                                    <option key={status.value} value={status.value}>
-                                        {selectedStatuses.includes(status.value) ? '✓ ' : ''}{status.label}
-                                    </option>
-                                ))}
-                            </select>
-                            <span className="text-xs text-gray-500 mt-1">Ctrl+Click para múltiplos</span>
-                        </div>
-
-                        {/* Box Multi-Select */}
-                        <div className="flex flex-col">
-                            <label className="text-sm font-medium text-gray-700 mb-2">
-                                Box {selectedBoxIds.length > 0 && `(${selectedBoxIds.length})`}
-                            </label>
-                            <select
-                                multiple
-                                value={selectedBoxIds}
-                                onChange={(e) => {
-                                    const options = Array.from(e.target.selectedOptions, option => option.value)
-                                    setSelectedBoxIds(options)
-                                }}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent h-[42px] overflow-hidden"
-                            >
-                                {boxes.map(box => (
-                                    <option key={box.id} value={box.id}>
-                                        {selectedBoxIds.includes(box.id) ? '✓ ' : ''}{box.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <span className="text-xs text-gray-500 mt-1">Ctrl+Click para múltiplos</span>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex flex-col justify-end">
-                            {(selectedStatuses.length > 0 || selectedBoxIds.length > 0) && (
-                                <button
-                                    onClick={() => {
-                                        setSelectedStatuses([])
-                                        setSelectedBoxIds([])
-                                    }}
-                                    className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors mb-2"
-                                >
-                                    🗑️ Limpar filtros
-                                </button>
-                            )}
-                        </div>
+                {/* Simple Filters */}
+                <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <label className="text-sm font-medium text-gray-700">Data:</label>
+                        <input
+                            type="date"
+                            value={filterDate}
+                            onChange={(e) => { setFilterDate(e.target.value); setPage(1) }}
+                            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-primary-500"
+                        />
                     </div>
-
-                    {/* New Appointment Button */}
-                    <div className="flex justify-end pt-2 border-t border-gray-200">
-                        <button
-                            onClick={() => router.push('/dashboard/appointments/new')}
-                            className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium shadow-sm transition-all hover:shadow"
-                        >
-                            + Novo Agendamento
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => router.push('/dashboard/appointments/new')}
+                        className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                    >
+                        + Novo Agendamento
+                    </button>
                 </div>
 
                 {loading ? (
-                    <div className="text-center py-12">Carregando...</div>
-                ) : (
                     <div className="bg-white rounded-lg shadow overflow-hidden">
-                        {appointments.length === 0 ? (
-                            <div className="text-center py-12">
-                                <p className="text-gray-500">Nenhum agendamento para esta data</p>
-                            </div>
-                        ) : (
+                        <TableSkeleton rows={pageSize} />
+                    </div>
+                ) : (
+                    <>
+                        <div className="bg-white rounded-lg shadow overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Horário</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente / Veículo</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Box</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                            <th
+                                                onClick={() => handleSort('scheduledStart')}
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                                            >
+                                                Horário <SortIcon field="scheduledStart" />
+                                            </th>
+                                            <th
+                                                onClick={() => handleSort('customerName')}
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                                            >
+                                                Cliente / Veículo <SortIcon field="customerName" />
+                                            </th>
+                                            <th
+                                                onClick={() => handleSort('boxName')}
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                                            >
+                                                Box <SortIcon field="boxName" />
+                                            </th>
+                                            <th
+                                                onClick={() => handleSort('status')}
+                                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                                            >
+                                                Status <SortIcon field="status" />
+                                            </th>
                                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Ações</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {appointments.map((appointment) => (
-                                            <tr key={appointment.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {format(new Date(appointment.scheduledStart), 'HH:mm')} - {format(new Date(appointment.scheduledEnd), 'HH:mm')}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="text-sm font-medium text-gray-900">{appointment.customer?.name}</div>
-                                                    <div className="text-sm text-gray-500">{appointment.vehicle?.model} - {appointment.vehicle?.plate}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{appointment.box?.name}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
-                                                        {getStatusLabel(appointment.status)}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button
-                                                        onClick={() => router.push(`/dashboard/appointments/${appointment.id}`)}
-                                                        className="text-primary-600 hover:text-primary-900"
-                                                    >
-                                                        Detalhes
-                                                    </button>
+                                        {appointments.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                                                    Nenhum agendamento para esta data
                                                 </td>
                                             </tr>
-                                        ))}
+                                        ) : (
+                                            appointments.map((appointment) => (
+                                                <tr key={appointment.id} className="hover:bg-gray-50">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {format(new Date(appointment.scheduledStart), 'HH:mm')} - {format(new Date(appointment.scheduledEnd), 'HH:mm')}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-sm font-medium text-gray-900">{appointment.customer?.name}</div>
+                                                        <div className="text-sm text-gray-500">{appointment.vehicle?.model} - {appointment.vehicle?.plate}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="text-sm text-gray-900">{appointment.box?.name || '-'}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(appointment.status)}`}>
+                                                            {getStatusLabel(appointment.status)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <button
+                                                            onClick={() => router.push(`/dashboard/appointments/${appointment.id}`)}
+                                                            className="text-primary-600 hover:text-primary-900"
+                                                        >
+                                                            Detalhes
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
+                        </div>
+
+                        {/* Pagination */}
+                        {totalItems > 0 && (
+                            <div className="mt-6">
+                                <Pagination
+                                    currentPage={page}
+                                    totalPages={totalPages}
+                                    pageSize={pageSize}
+                                    totalItems={totalItems}
+                                    onPageChange={(newPage) => setPage(newPage)}
+                                    onPageSizeChange={(newSize) => { setPageSize(newSize); setPage(1) }}
+                                    pageSizeOptions={[10, 20, 50, 100]}
+                                />
+                            </div>
                         )}
-                    </div>
+                    </>
                 )}
             </main>
         </div>
