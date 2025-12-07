@@ -6,7 +6,9 @@ export class UploadsController {
             return res.status(400).json({ message: 'Nenhum arquivo enviado' })
         }
 
-        const fileUrl = `http://localhost:3001/uploads/${req.file.filename}`
+        // Use dynamic baseUrl to work in both development and production
+        const baseUrl = process.env.BACKEND_URL || 'https://oficina-manager.onrender.com'
+        const fileUrl = `${baseUrl}/uploads/${req.file.filename}`
 
         return res.json({
             url: fileUrl,
