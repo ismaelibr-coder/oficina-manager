@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { serviceOrdersService, ServiceOrder } from '@/services/service-orders'
 import { authService } from '@/services/auth'
 import { Pagination } from '@/components/Pagination'
+import { fetchPaginated } from '@/services/pagination-helper'
 
 export default function ServiceOrdersPage() {
     const router = useRouter()
@@ -26,34 +27,19 @@ export default function ServiceOrdersPage() {
     const loadOrders = async () => {
         try {
             setLoading(true)
-            // Build query params
-            const params = new URLSearchParams()
-            if (filterStatus) params.append('status', filterStatus)
-            params.append('page', page.toString())
-            params.append('pageSize', pageSize.toString())
+            const params: Record<string, string> = {}
+            if (filterStatus) params.status = filterStatus
 
-            const url = `${params.toString() ? '?' + params.toString() : ''}`
+            const result = await fetchPaginated<ServiceOrder>(
+                '/service-orders',
+                page,
+                pageSize,
+                params
+            )
 
-            // Call service (we'll update this to handle pagination)
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://oficina-manager.onrender.com/api'}/service-orders${url}`, {
-                headers: {
-                    'Authorization': `Bearer ${authService.getToken()}`,
-                    'Content-Type': 'application/json'
-                }
-            })
-
-            if (!response.ok) throw new Error('Erro ao carregar OSs')
-
-            const json = await response.json()
-
-            // Handle paginated response
-            if (json.data) {
-                setOrders(json.data)
-                setTotalPages(json.pagination?.totalPages || 1)
-                setTotalItems(json.pagination?.total || 0)
-            } else {
-                setOrders(json)
-            }
+            setOrders(result.data)
+            setTotalPages(result.pagination.totalPages)
+            setTotalItems(result.pagination.total)
         } catch (error: any) {
             alert(error.message)
         } finally {
