@@ -1,9 +1,10 @@
-// Configuração da API
-// Em produção, sempre usa a URL do Render
-// Em desenvolvimento local, mude manualmente para http://localhost:3001/api
 // Em produção, usa a URL do ambiente ou a fixa do Render
-// Em desenvolvimento local, usa localhost se não houver variável definida
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://oficina-manager.onrender.com/api'
+// Garante que a URL termine com /api para evitar erros 404
+let API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://oficina-manager.onrender.com/api'
+
+if (API_URL && !API_URL.endsWith('/api')) {
+    API_URL = `${API_URL}/api`
+}
 
 export const config = {
     apiUrl: API_URL,
