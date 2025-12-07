@@ -1,14 +1,21 @@
 import { Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { AuthRequest } from '../middleware/auth.middleware'
+import { getPaginationParams, buildPaginationResult } from '../utils/pagination'
 
 const prisma = new PrismaClient()
 
 export class ServiceOrdersController {
-    // Listar OS
+    // Listar OS com paginação
     async list(req: AuthRequest, res: Response) {
         try {
             const { status, search } = req.query
+
+            // Get pagination params
+            const { page, pageSize, skip, take } = getPaginationParams(req.query, {
+                defaultPageSize: 50,
+                maxPageSize: 100
+            })
 
             const where: any = {}
 
@@ -23,8 +30,14 @@ export class ServiceOrdersController {
                 ]
             }
 
+            // Get total count
+            const total = await prisma.serviceOrder.count({ where })
+
+            // Get paginated data
             const serviceOrders = await prisma.serviceOrder.findMany({
                 where,
+                skip,
+                take,
                 include: {
                     vehicle: true,
                     mechanic: { select: { id: true, name: true, email: true } },
@@ -55,11 +68,12 @@ export class ServiceOrdersController {
                 } : null
             }))
 
-            return res.json(safeServiceOrders)
+            // Return paginated result
+            return res.json(buildPaginationResult(safeServiceOrders, total, page, pageSize))
         } catch (error) {
             console.error('Erro ao listar OS:', error)
-            // Fail-safe: return empty array
-            return res.json([])
+            // Fail-safe: return empty paginated result
+            return res.json(buildPaginationResult([], 0, 1, 50))
         }
     }
 
