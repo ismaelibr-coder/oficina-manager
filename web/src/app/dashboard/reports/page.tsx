@@ -4,7 +4,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { authService } from '@/services/auth'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+import { config } from '@/config'
+
+const API_URL = `${config.apiUrl}`
 
 type ReportType = 'revenue' | 'service-orders' | 'products' | 'services' | 'customers'
 
