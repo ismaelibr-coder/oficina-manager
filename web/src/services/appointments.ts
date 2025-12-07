@@ -51,6 +51,7 @@ class AppointmentsService {
     }
 
     async list(filters?: { start?: string; end?: string; status?: string; customerId?: string; vehicleId?: string }): Promise<Appointment[]> {
+        console.log('[Appointments] Fetching appointments with filters:', filters)
         const params = new URLSearchParams()
         if (filters) {
             if (filters.start) params.append('start', filters.start)
@@ -64,16 +65,26 @@ class AppointmentsService {
             ? `${config.apiUrl}/appointments?${params}`
             : `${config.apiUrl}/appointments`
 
-        const response = await fetch(url, {
-            headers: this.getHeaders(),
-        })
+        console.log('[Appointments] Request URL:', url)
 
-        if (!response.ok) {
-            const error = await response.json()
-            throw new Error(error.message || 'Erro ao listar agendamentos')
+        try {
+            const response = await fetch(url, {
+                headers: this.getHeaders(),
+            })
+
+            if (!response.ok) {
+                const error = await response.json()
+                console.error('[Appointments] Error response:', error)
+                throw new Error(error.message || 'Erro ao listar agendamentos')
+            }
+
+            const data = await response.json()
+            console.log('[Appointments] Success:', data.length, 'appointments found')
+            return data
+        } catch (error) {
+            console.error('[Appointments] Fetch error:', error)
+            throw error
         }
-
-        return response.json()
     }
 
     async getById(id: string): Promise<Appointment> {
