@@ -6,6 +6,7 @@ import { servicesService, Service } from '@/services/services'
 import { authService } from '@/services/auth'
 import { Pagination } from '@/components/Pagination'
 import { fetchPaginated } from '@/services/pagination-helper'
+import { TableSkeleton } from '@/components/Skeletons'
 
 export default function ServicesPage() {
     const router = useRouter()
@@ -90,7 +91,9 @@ export default function ServicesPage() {
                 </div>
 
                 {loading ? (
-                    <div className="text-center py-12">Carregando...</div>
+                    <div className="bg-white rounded-lg shadow overflow-hidden">
+                        <TableSkeleton rows={pageSize} />
+                    </div>
                 ) : (
                     <>
                         <div className="bg-white rounded-lg shadow overflow-hidden">

@@ -6,6 +6,7 @@ import { customersService, Customer } from '@/services/customers'
 import { authService } from '@/services/auth'
 import { Pagination } from '@/components/Pagination'
 import { fetchPaginated } from '@/services/pagination-helper'
+import { TableSkeleton } from '@/components/Skeletons'
 
 export default function CustomersPage() {
     const router = useRouter()
@@ -93,7 +94,7 @@ export default function CustomersPage() {
 
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                     {loading ? (
-                        <div className="text-center py-12">Carregando...</div>
+                        <TableSkeleton rows={pageSize} />
                     ) : (
                         <>
                             <table className="min-w-full divide-y divide-gray-200">
