@@ -61,7 +61,11 @@ export class AuthController {
 
         } catch (error) {
             console.error('Erro no login:', error)
-            return res.status(500).json({ message: 'Erro interno do servidor' })
+            return res.status(500).json({
+                message: 'Erro interno do servidor',
+                debug: error instanceof Error ? error.message : 'Unknown error',
+                stack: error instanceof Error ? error.stack : undefined
+            })
         }
     }
 }
