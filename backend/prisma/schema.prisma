@@ -71,6 +71,9 @@ model Customer {
   vehicles      Vehicle[]
   appointments  Appointment[]
 
+  @@index([email])
+  @@index([cpfCnpj])
+  @@index([createdAt])
   @@map("customers")
 }
 
@@ -95,6 +98,9 @@ model Vehicle {
   appointments  Appointment[]
   serviceOrders ServiceOrder[]
 
+  @@index([customerId])
+  @@index([plate])
+  @@index([createdAt])
   @@map("vehicles")
 }
 
@@ -155,6 +161,12 @@ model Appointment {
   checklist    Checklist?
   serviceOrder ServiceOrder?
 
+  @@index([scheduledStart])
+  @@index([status])
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([boxId])
+  @@index([createdAt])
   @@map("appointments")
 }
 
