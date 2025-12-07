@@ -147,6 +147,13 @@ const diagnosticsController = new DiagnosticsController()
 // Rota de Diagnóstico (Pública)
 router.get('/diagnostics', (req, res) => diagnosticsController.check(req, res))
 
+// Rotas de Migração (Protegidas - apenas admin, usar APENAS UMA VEZ)
+import { MigrationController } from './controllers/migration.controller'
+const migrationController = new MigrationController()
+
+router.post('/migrate', authMiddleware, adminMiddleware, (req, res) => migrationController.runMigration(req, res))
+router.get('/migrate/status', authMiddleware, (req, res) => migrationController.checkMigrationStatus(req, res))
+
 // Rota de Seed (Temporária para Demonstração)
 router.get('/seed', (req, res) => seedController.seed(req, res))
 
