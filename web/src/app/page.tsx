@@ -164,26 +164,6 @@ function LoginPageContent() {
                             )}
                         </button>
                     </form>
-
-                    {/* Divider */}
-                    <div className="mt-6 mb-6 flex items-center">
-                        <div className="flex-1 border-t border-gray-200"></div>
-                        <span className="px-4 text-sm text-gray-500">ou</span>
-                        <div className="flex-1 border-t border-gray-200"></div>
-                    </div>
-
-                    {/* Criar conta */}
-                    <div className="text-center">
-                        <p className="text-sm text-gray-600">
-                            Não tem uma conta?{' '}
-                            <a
-                                href="#"
-                                className="text-primary-600 hover:text-primary-700 font-semibold"
-                            >
-                                Criar conta
-                            </a>
-                        </p>
-                    </div>
                 </div>
 
                 {/* Footer */}

@@ -98,15 +98,12 @@ export class AuthController {
 
             const resetUrl = `${FRONTEND_URL}/reset-password/${resetToken}`
 
-            try {
-                await sendEmail({
-                    to: user.email,
-                    subject: 'Recuperação de Senha - Oficina Manager',
-                    html: passwordResetTemplate(resetUrl, user.name)
-                })
-            } catch (emailError) {
-                console.error('Erro ao enviar email:', emailError)
-            }
+            // Tentar enviar o email - se falhar, lançar erro
+            await sendEmail({
+                to: user.email,
+                subject: 'Recuperação de Senha - Oficina Manager',
+                html: passwordResetTemplate(resetUrl, user.name)
+            })
 
             return res.json({
                 message: 'Se o email existir, você receberá instruções para redefinir sua senha'

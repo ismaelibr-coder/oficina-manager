@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+// import { Inter } from 'next/font/google' // Temporariamente desabilitado devido a erro de certificado SSL
 import './globals.css'
 import { ReactQueryProvider } from '@/providers/ReactQueryProvider'
 
-const inter = Inter({ subsets: ['latin'] })
+// const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
     title: 'Sistema de Gestão de Oficina',
@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="pt-BR" suppressHydrationWarning={true}>
-            <body className={inter.className} suppressHydrationWarning={true}>
+            <body className="font-sans" suppressHydrationWarning={true}>
                 <ReactQueryProvider>
                     {children}
                 </ReactQueryProvider>
