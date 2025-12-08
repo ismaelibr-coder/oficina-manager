@@ -6,6 +6,8 @@ if (API_URL && !API_URL.endsWith('/api')) {
     API_URL = `${API_URL}/api`
 }
 
+export { API_URL }
+
 export const config = {
     apiUrl: API_URL,
 }
