@@ -1,25 +1,17 @@
 import nodemailer from 'nodemailer'
+import { Resend } from 'resend'
 
-// Configurar transporter baseado nas variáveis de ambiente
-// Se SENDGRID_API_KEY estiver presente, usa SendGrid
-// Caso contrário, usa Gmail (para desenvolvimento local)
-const transporter = process.env.SENDGRID_API_KEY
-    ? nodemailer.createTransport({
-        host: 'smtp.sendgrid.net',
-        port: 587,
-        secure: false,
-        auth: {
-            user: 'apikey',
-            pass: process.env.SENDGRID_API_KEY
-        }
-    })
-    : nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD
-        }
-    })
+// Inicializar Resend se a API key estiver presente
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+
+// Configurar transporter do nodemailer para Gmail (fallback para desenvolvimento local)
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+    }
+})
 
 export interface EmailOptions {
     to: string
@@ -28,17 +20,29 @@ export interface EmailOptions {
 }
 
 export async function sendEmail({ to, subject, html }: EmailOptions) {
-    try {
-        const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@oficina.com'
-        const fromName = process.env.EMAIL_FROM_NAME || 'Oficina Manager'
+    const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@oficina.com'
+    const fromName = process.env.EMAIL_FROM_NAME || 'Oficina Manager'
 
-        await transporter.sendMail({
-            from: `"${fromName}" <${fromEmail}>`,
-            to,
-            subject,
-            html
-        })
-        console.log(`Email enviado para ${to}`)
+    try {
+        // Se Resend estiver configurado, usa Resend (produção)
+        if (resend) {
+            await resend.emails.send({
+                from: `${fromName} <${fromEmail}>`,
+                to,
+                subject,
+                html
+            })
+            console.log(`Email enviado via Resend para ${to}`)
+        } else {
+            // Caso contrário, usa Gmail via nodemailer (desenvolvimento local)
+            await transporter.sendMail({
+                from: `"${fromName}" <${fromEmail}>`,
+                to,
+                subject,
+                html
+            })
+            console.log(`Email enviado via Gmail para ${to}`)
+        }
     } catch (error) {
         console.error('Erro ao enviar email:', error)
         throw new Error('Falha ao enviar email')
