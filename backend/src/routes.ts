@@ -42,6 +42,33 @@ router.post('/auth/login', authController.login)
 router.post('/auth/request-password-reset', authController.requestPasswordReset)
 router.post('/auth/reset-password', authController.resetPassword)
 
+// TEMPORÁRIO: Endpoint para atualizar email do admin (REMOVER APÓS USO)
+router.get('/update-admin-email', async (req, res) => {
+    try {
+        const { PrismaClient } = await import('@prisma/client')
+        const prisma = new PrismaClient()
+
+        const updatedUser = await prisma.user.update({
+            where: { email: 'admin@oficina.com' },
+            data: { email: 'ismael.ibr@gmail.com' }
+        })
+
+        await prisma.$disconnect()
+
+        res.json({
+            success: true,
+            message: 'Email atualizado com sucesso!',
+            newEmail: updatedUser.email
+        })
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        })
+    }
+})
+
+
 // Rotas de Usuários (protegidas)
 router.get('/users', authMiddleware, adminMiddleware, usersController.list)
 router.get('/users/:id', authMiddleware, adminMiddleware, usersController.getById)
